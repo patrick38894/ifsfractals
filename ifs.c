@@ -75,8 +75,8 @@ void plot(unsigned char * buf, int x, int y, vec2 * pt) {
 }
 
 int main (int argc, char ** argv) {
-	int edges[6]= {2,4,4,2,4,2};
-	int graph[6][4]= {{1,2,-1,-1}, {0,2,3,4}, {0,1,4,5}, {1,4,-1,-1}, {1,2,3,5}, {2,4,-1,-1}}; //triangle
+	int edges[6]= {5,5,5,5,5,5};
+	int graph[6][5]= {{1,2,3,4,5}, {0,2,3,4,5}, {0,1,3,4,5}, {0,1,2,4,5}, {0,1,2,3,5}, {0,1,2,3,4}}; //k6
 	void (*funcs[6]) (vec2 *, vec2 **) = {f0, f1, f2, f3, f4, f5};
 
 	
