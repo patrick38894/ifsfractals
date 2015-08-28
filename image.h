@@ -14,8 +14,8 @@ typedef image_t {
 } image_t;
 
 int insert_node(image_t image, int x, int y,  node_t * to_add);
-unsigned char over(unsigned char a, unsigned char aa, unsigned char b, unsigned char ba) {
-int render_image(image_t image, unsigned char * output) {
-void render_stack(node_t * head, unsigned char * r, unsigned char * g, unsigned char * b, unsigned char * a) {
+unsigned char over(unsigned char a, unsigned char aa, unsigned char b, unsigned char ba);
+int render_image(image_t image, unsigned char * output);
+void render_stack(node_t * head, unsigned char * r, unsigned char * g, unsigned char * b, unsigned char * a);
 
 
