@@ -1,12 +1,12 @@
 #include "engine.cuh"
 
-__global__ ifs_kernel(float * pts, unsigned char * out_buf) {
+__global__ void ifs_kernel(float * pts, unsigned char * out_buf) {
 	float outs[7];
-	int idx = threadIdx.x + blockIdx.x*blockDim.x
+	int idx = threadIdx.x + blockIdx.x*blockDim.x;
 	switch (blockIdx.x) {
 		case (1): {
 			for (int i = 0; i < 7; ++i)
-				out[i] = sin(pts[idx+i]);
+				outs[i] = sin(pts[idx+i]);
 			break;
 		}
 		case (2): {
@@ -24,12 +24,12 @@ __global__ ifs_kernel(float * pts, unsigned char * out_buf) {
 		}
 		case (3): {
 			for (int i = 0; i < 7; ++i)
-				out[i] = (pts[idx+i]+pts[(idx+i+1)%7])/3.0;
+				outs[i] = (pts[idx+i]+pts[(idx+i+1)%7])/3.0;
 			break;
 		}
 		case (4): {
 			for (int i = 0; i < 7; ++i)
-				out[i] = atan(pts[idx+i]+pts[(idx+i*i)%7])/3.0;
+				outs[i] = atan(pts[idx+i]+pts[(idx+i*i)%7])/3.0;
 			break;
 		}
 		//tranform
@@ -41,19 +41,19 @@ __global__ ifs_kernel(float * pts, unsigned char * out_buf) {
 
 void * writer_thread(void * arg) {
 	t_data * input = (t_data *) arg;
-	cudaMemCpy(input->char_buf, input->gpu_char_buf, size*sizeof(unsigned char), cudaMemcpyDeviceToHost);
+	cudaMemcpy(input->char_buf, input->gpu_char_buf, input->size*sizeof(unsigned char), cudaMemcpyDeviceToHost);
 	for (int i = 0; i < input->size; ++i) {
 		int x = input->char_buf[i*7+0];
 		int y = input->char_buf[i*7+1];
 		
-		node_t * mynode = malloc(sizeof(node));
+		node_t * node = (node_t *) malloc(sizeof(node_t));
 		node->r = input->char_buf[i*7+3];
 		node->g = input->char_buf[i*7+4];
 		node->b = input->char_buf[i*7+5];
 		node->a = input->char_buf[i*7+6];
 		node->z = input->char_buf[i*7+2];
 	
-		insertNode(&image, x, y, mynode);
+		insert_node(input->image, x, y, node);
 	}
 	sem_post(input->sem);
 	pthread_exit();
@@ -95,7 +95,7 @@ void main(int argc, char ** argv) {
 	for (int i = 0; i < 100; ++i) {
 		for (int i = 0; i < buf_size; ++i)
 			pt_buf[i] = -1.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.0)));
-		cudaMemCpy(gpu_pt_buf, pt_buf, buf_size * sizeof(float), cudaMemcpyHostToDevice);
+		cudaMemcpy(gpu_pt_buf, pt_buf, buf_size * sizeof(float), cudaMemcpyHostToDevice);
 		dim3 threads_per_block(total_threads/total_blocks);
 		dim3 num_blocks(total_blocks);
 

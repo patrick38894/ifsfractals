@@ -1,4 +1,4 @@
-#include <stido.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -9,15 +9,14 @@
 #include "image.h"
 #include "ppm.h"
 
-typedef t_data {
-        image_t ;
+typedef struct {
+        image_t image;
         int size;
         sem_t sem;
         unsigned char * char_buf;
         unsigned char * gpu_char_buf;
 } t_data;
 
-
-__global__ ifs_kernel(float * pts, unsigned char * out_buf);
+__global__ void ifs_kernel(float * pts, unsigned char * out_buf);
 void * writer_thread(void * arg);
 

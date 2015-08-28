@@ -1,13 +1,13 @@
-typedef node_t {
+typedef struct node_t {
         unsigned char r;
         unsigned char g;
         unsigned char b;
         unsigned char a;
         unsigned char z;
-        node * next;
+        node_t * next;
 } node_t;
 
-typedef image_t {
+typedef struct {
 	int xdim;
 	int ydim;
 	node_t ** data;
