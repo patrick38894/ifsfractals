@@ -1,6 +1,6 @@
-#include "engine.cuh"
+#include "engine.h"
 
-__global__ void ifs_kernel(float * pts, unsigned char * out_buf) {
+__global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, unsigned char * rgba_out_buf) {
 	float outs[7];
 	int idx = threadIdx.x + blockIdx.x*blockDim.x;
 	switch (blockIdx.x) {
@@ -33,9 +33,19 @@ __global__ void ifs_kernel(float * pts, unsigned char * out_buf) {
 			break;
 		}
 		//tranform
+		//left blank for now
+
 		//quantize
-		//mix rgba
-		//add to outBuf
+		pt_out_buf[3*idx] = (int) (out[0] * (float) xdim * 1.5);
+		pt_out_buf[3*idx+1] = (int) (out[1] * (float) ydim * 1.5);
+		pt_out_buf[3*idx+2] = (int) (out[2] * (float));
+
+		//rgba
+		rgba_out_buf[4*idx] = (unsigned char) (outs[3] * 255.0);
+		rgba_out_buf[4*idx+1] = (unsigned char) (outs[4] * 255.0);
+		rgba_out_buf[4*idx+2] = (unsigned char) (outs[5] * 255.0);
+		rgba_out_buf[4*idx+3] = (unsigned char) (outs[6] * 255.0);
+	
 	}
 }
 
@@ -55,64 +65,7 @@ void * writer_thread(void * arg) {
 	
 		insert_node(input->image, x, y, node);
 	}
-	sem_post(input->sem);
-	pthread_exit();
+	sem_post(&input->sem);
+	pthread_exit(0);
 }
 
-void main(int argc, char ** argv) {
-	
-	int dimx = 500;
-	int dimy = 500;
-	
-	const int pix_size = 7; //xyzrgba
-	const int total_threads = 1024;
-	const int total_blocks= 4; 
-	const int buf_size = total_threads * pix_size;
-	float pt_buf[buf_size];
-	float gpu_pt_buf[buf_size];
-	unsigned char char_buf[buf_size];
-	unsigned char * gpu_char_buf;
-
-	image_t image;
-	image.data = calloc(sizeof(node_t *) * dimx * dimy);
-	image.xdim = xdim;
-	image.ydim = ydim;
-	
-	cudaMalloc(&gpu_pt_buf, buf_size * sizeof(float));
-	cudaMalloc(&gpu_char_buf, buf_size * sizeof(unsigned char));
-
-	pthread_t tid;
-	sem_t sem;
-	sem_init(&sem, 0, 1);
-	t_data thread_args;
-	thread_args.image = image;
-	thread_args.size = buf_size;
-	thread_args.char_buf = char_buf;
-	thread_args.gpu_char_buf = gpu_char_buf;
-
-	srand(time(0));
-
-	for (int i = 0; i < 100; ++i) {
-		for (int i = 0; i < buf_size; ++i)
-			pt_buf[i] = -1.0 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.0)));
-		cudaMemcpy(gpu_pt_buf, pt_buf, buf_size * sizeof(float), cudaMemcpyHostToDevice);
-		dim3 threads_per_block(total_threads/total_blocks);
-		dim3 num_blocks(total_blocks);
-
-		sem_wait(&sem);
-
-		ifsKernel<<<num_blocks,threads_per_block>>>(gpu_pt_buf, gpu_char_buf);
-		pthread_create(&tid, NULL, writer_thread, (void *) &thread_args);
-	}
-	sem_wait(&sem);
-
-	cudaFree(gpu_pt_buf);
-	cudaFree(gpu_char_buf);
-	free(pt_buf);
-	free(char_buf);
-	unsigned char * ppm_buf = malloc(sizeof(unsigned char) * dimx * dimy * 3);
-	render_image(image, ppm_buf);
-	writePPM(ppm_buf, dimx, dimy, "my_fractal.ppm");
-	free(ppm_buf);
-	return 0;
-}
