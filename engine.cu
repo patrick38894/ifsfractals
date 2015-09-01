@@ -36,15 +36,15 @@ __global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, fl
 		//left blank for now
 	}
 		//quantize
-	pt_out_buf[2*idx] = (int) (outs[0] * (float) xdim * 1.5);
-	pt_out_buf[2*idx+1] = (int) (outs[1] * (float) ydim * 1.5);
+	pt_out_buf[2*idx] = (int) (outs[0] * (float) xdim + ((float) xdim /2.0));
+	pt_out_buf[2*idx+1] = (int) (outs[1] * (float) ydim + ((float) ydim /2.0));
 	zbuf[idx] = outs[2];
 
 	//rgba
 	rgba_out_buf[4*idx] = (unsigned char) (outs[3] * 255.0);
 	rgba_out_buf[4*idx+1] = (unsigned char) (outs[4] * 255.0);
 	rgba_out_buf[4*idx+2] = (unsigned char) (outs[5] * 255.0);
-	rgba_out_buf[4*idx+3] = (unsigned char) (outs[6] * 255.0);
+	rgba_out_buf[4*idx+3] = (unsigned char) 1; //(unsigned char) (outs[6] * 255.0);
 }
 
 void * writer_thread(void * arg) {

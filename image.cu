@@ -25,7 +25,7 @@ unsigned char over(unsigned char a, unsigned char aa, unsigned char b, unsigned 
 }
 
 void render_stack(node_t * head, unsigned char * r, unsigned char * g, unsigned char * b, unsigned char * a) {
-	if (!head) {
+/*	if (!head) {
 		*r = *g = *b = 0;
 		*a = 1;
 		return;
@@ -35,6 +35,21 @@ void render_stack(node_t * head, unsigned char * r, unsigned char * g, unsigned 
 	*g = over(head->g, head->a, *g, *a);
 	*b = over(head->b, head->a, *b, *a);
 	*a = over(head->a, head->a, *a, *a);
+*/
+
+
+	//NOTE: in order to implement a quick fix for the stack overflow problem in the recursive version, i have reversed the order of the stack (placing the view on positive side of the z axis, looking back in the negative direction)
+
+	*r = *g = *b = 0;
+	*a = 1;
+	node_t * current = head;
+	while (current) {
+		*r = over(*r, *a, current->r, current->a);
+		*g = over(*g, *a, current->g, current->a);
+		*b = over(*b, *a, current->b, current->a);
+		*a = over(*a, *a, current->a, current->a);
+		current = current->next;
+	}
 }
 
 int render_image(image_t image, unsigned char * output) {
