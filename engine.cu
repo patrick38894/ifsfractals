@@ -1,6 +1,6 @@
 #include "engine.h"
 
-__global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, unsigned char * rgba_out_buf) {
+__global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, float * zbuf, unsigned char * rgba_out_buf) {
 	float outs[7];
 	int idx = threadIdx.x + blockIdx.x*blockDim.x;
 	switch (blockIdx.x) {
@@ -34,19 +34,17 @@ __global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, un
 		}
 		//tranform
 		//left blank for now
-
-		//quantize
-		pt_out_buf[3*idx] = (int) (out[0] * (float) xdim * 1.5);
-		pt_out_buf[3*idx+1] = (int) (out[1] * (float) ydim * 1.5);
-		pt_out_buf[3*idx+2] = (int) (out[2] * (float));
-
-		//rgba
-		rgba_out_buf[4*idx] = (unsigned char) (outs[3] * 255.0);
-		rgba_out_buf[4*idx+1] = (unsigned char) (outs[4] * 255.0);
-		rgba_out_buf[4*idx+2] = (unsigned char) (outs[5] * 255.0);
-		rgba_out_buf[4*idx+3] = (unsigned char) (outs[6] * 255.0);
-	
 	}
+		//quantize
+	pt_out_buf[3*idx] = (int) (outs[0] * (float) xdim * 1.5);
+	pt_out_buf[3*idx+1] = (int) (outs[1] * (float) ydim * 1.5);
+	pt_out_buf[3*idx+2] = (int) (outs[2] * (float));
+
+	//rgba
+	rgba_out_buf[4*idx] = (unsigned char) (outs[3] * 255.0);
+	rgba_out_buf[4*idx+1] = (unsigned char) (outs[4] * 255.0);
+	rgba_out_buf[4*idx+2] = (unsigned char) (outs[5] * 255.0);
+	rgba_out_buf[4*idx+3] = (unsigned char) (outs[6] * 255.0);
 }
 
 void * writer_thread(void * arg) {
