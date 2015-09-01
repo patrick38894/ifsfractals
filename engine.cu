@@ -36,9 +36,9 @@ __global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, fl
 		//left blank for now
 	}
 		//quantize
-	pt_out_buf[3*idx] = (int) (outs[0] * (float) xdim * 1.5);
-	pt_out_buf[3*idx+1] = (int) (outs[1] * (float) ydim * 1.5);
-	pt_out_buf[3*idx+2] = (int) (outs[2] * (float));
+	pt_out_buf[2*idx] = (int) (outs[0] * (float) xdim * 1.5);
+	pt_out_buf[2*idx+1] = (int) (outs[1] * (float) ydim * 1.5);
+	zbuf[idx] = outs[2];
 
 	//rgba
 	rgba_out_buf[4*idx] = (unsigned char) (outs[3] * 255.0);
@@ -49,21 +49,30 @@ __global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, fl
 
 void * writer_thread(void * arg) {
 	t_data * input = (t_data *) arg;
-	cudaMemcpy(input->char_buf, input->gpu_char_buf, input->size*sizeof(unsigned char), cudaMemcpyDeviceToHost);
-	for (int i = 0; i < input->size; ++i) {
-		int x = input->char_buf[i*7+0];
-		int y = input->char_buf[i*7+1];
+	unsigned char * temp_char_buf = (unsigned char *) malloc(4 * input->num_elements * sizeof(unsigned char));
+	float * temp_z_buf = (float *) malloc(input->num_elements * sizeof(float));
+	int * temp_coord_buf = (int *) malloc(2 * input->num_elements * sizeof(int));
+	cudaMemcpy(temp_char_buf, input->gpu_char_buf, 4 * input->num_elements * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+	cudaMemcpy(temp_z_buf, input->gpu_z_buf, input->num_dims * input->num_elements * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(temp_coord_buf, input->gpu_coord_buf, 2 * input->num_elements * sizeof(float), cudaMemcpyDeviceToHost);
+	for (int i = 0; i < input->num_elements; ++i) {
+		int x = temp_coord_buf[i*2];
+		int y = temp_coord_buf[i*2+1];
 		
 		node_t * node = (node_t *) malloc(sizeof(node_t));
-		node->r = input->char_buf[i*7+3];
-		node->g = input->char_buf[i*7+4];
-		node->b = input->char_buf[i*7+5];
-		node->a = input->char_buf[i*7+6];
-		node->z = input->char_buf[i*7+2];
+		node->r = temp_char_buf[i*6+2];
+		node->g = temp_char_buf[i*6+3];
+		node->b = temp_char_buf[i*6+4];
+		node->a = temp_char_buf[i*6+5];
+		node->z = temp_z_buf[i];
+		node->next = NULL;
 	
 		insert_node(input->image, x, y, node);
 	}
-	sem_post(&input->sem);
+	free(temp_z_buf);
+	free(temp_char_buf);
+	free(temp_coord_buf);
+	sem_post(&sem);
 	pthread_exit(0);
 }
 

@@ -1,20 +1,22 @@
 #include "image.h"
 
 //naive implementation of rgba image rendering with zbuffer
-int insert_node(image_t image, int x, int y,  node_t * to_add) {
+int insert_node(image_t image, int x, int y, node_t * to_add) {
 	int idx = y * image.xdim + x;
-	node_t * current = image.data[idx];
-	if (!current) {
-		image.data[idx] = to_add;
+	if ((x < 0 || x > image.xdim) || (y < 0 || y > image.ydim))
+		return 0;
+	node_t ** head_ref = &image.data[idx];
+	if (*head_ref == NULL || (*head_ref)->z > to_add->z) {
+		to_add->next = *head_ref;
+		*head_ref = to_add;
 		return 1;
 	}
-	node_t * prev = current;
-	while (current && (to_add->z > current->z)) {
-		prev = current;
+	node_t * current = *head_ref;
+	while (current->next && (to_add->z > current->next->z))
 		current = current->next;
-	}
-	prev->next = to_add;
-	to_add->next = current;
+	to_add->next = current->next;
+	current->next = to_add; 
+	return 1;
 }
 
 unsigned char over(unsigned char a, unsigned char aa, unsigned char b, unsigned char ba) {
@@ -26,6 +28,7 @@ void render_stack(node_t * head, unsigned char * r, unsigned char * g, unsigned 
 	if (!head) {
 		*r = *g = *b = 0;
 		*a = 1;
+		return;
 	}
 	render_stack(head->next, r, g, b, a);
 	*r = over(head->r, head->a, *r, *a);

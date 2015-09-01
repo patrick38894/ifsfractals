@@ -1,9 +1,9 @@
 NVCC=nvcc
-NVCCFLAGS= -c
+NVCCFLAGS= -c -g
 
 all: prog
 
-prog: engine.o image.o ppm.o
+prog: engine.o image.o ppm.o main.o
 	$(NVCC) ppm.o image.o engine.o main.o -o fractal-gen
 
 main.o: main.cu
@@ -12,10 +12,10 @@ main.o: main.cu
 engine.o: engine.cu
 	$(NVCC) $(NVCCFLAGS) engine.cu
 
-ppm.o: ppm.cpp
+ppm.o: ppm.cu
 	$(NVCC) $(NVCCFLAGS) ppm.cu
 
-image.o: image.cpp
+image.o: image.cu
 	$(NVCC) $(NVCCFLAGS) image.cu
 
 clean:

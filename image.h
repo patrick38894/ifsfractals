@@ -3,7 +3,7 @@ typedef struct node_t {
         unsigned char g;
         unsigned char b;
         unsigned char a;
-        unsigned char z;
+        float z;
         node_t * next;
 } node_t;
 
