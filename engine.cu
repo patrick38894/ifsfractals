@@ -9,51 +9,67 @@ void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
    }
 }
 
-__global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, float * zbuf, unsigned char * rgba_out_buf) {
+__global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, float * zbuf, unsigned char * rgba_out_buf, int iterations) {
 	float outs[7];
 	int idx = threadIdx.x + blockIdx.x*blockDim.x;
-	switch (blockIdx.x) {
-		case (1): {
-			for (int i = 0; i < 7; ++i)
-				outs[i] = sin(pts[idx+i]);
-			break;
+	
+	int initial_iterations = 20;
+	for (int k = 0; k < initial_iterations + iterations; ++k) {
+		switch (blockIdx.x % 4) {
+			case (1): {
+				for (int i = 0; i < 7; ++i)
+					outs[i] = sin(pts[idx+i]) + sqrt(abs(pts[idx+((i+1)%7)]));
+				break;
+			}
+			case (2): {
+				outs[0] = pts[idx+1] * pts[idx+5]
+						- pts[idx+2] * pts[idx+4];
+				outs[1] = pts[idx+2] * pts[idx+3]
+						- pts[idx] * pts[idx+5];
+				outs[2] = pts[idx] * pts[idx+4]
+						- pts[idx+1] * pts[idx+3];
+				outs[3] = pts[idx+3];
+				outs[4] = pts[idx+4];
+				outs[5] = pts[idx+5];
+				outs[6] = pts[idx+6];
+				break;
+			}
+			case (3): {
+				for (int i = 0; i < 7; ++i)
+					outs[i] = (pts[idx+i]+pts[idx+((i+2)%7)])/1.2;
+				break;
+			}
+			case (0): {
+				for (int i = 0; i < 7; ++i)
+					outs[i] = atan(pts[idx+i]+pts[(idx+i*i%7)])/2.0;
+				break;
+			}
 		}
-		case (2): {
-			outs[0] = pts[idx+1] * pts[idx+5]
-					- pts[idx+2] * pts[idx+4];
-			outs[1] = pts[idx+2] * pts[idx+3]
-					- pts[idx] * pts[idx+5];
-			outs[2] = pts[idx] * pts[idx+4]
-					- pts[idx+1] * pts[idx+3];
-			outs[3] = pts[idx+3];
-			outs[4] = pts[idx+4];
-			outs[5] = pts[idx+5];
-			outs[6] = pts[idx+6];
-			break;
-		}
-		case (3): {
-			for (int i = 0; i < 7; ++i)
-				outs[i] = (pts[idx+i]+pts[(idx+i+1)%7])/3.0;
-			break;
-		}
-		case (4): {
-			for (int i = 0; i < 7; ++i)
-				outs[i] = atan(pts[idx+i]+pts[(idx+i*i)%7])/3.0;
-			break;
-		}
-		//tranform
-		//left blank for now
-	}
-		//quantize
-	pt_out_buf[2*idx] = (int) (outs[0] * (float) xdim /2.0 + ((float) xdim /2.0));
-	pt_out_buf[2*idx+1] = (int) (outs[1] * (float) ydim /2.0 + ((float) ydim /2.0));
-	zbuf[idx] = outs[2];
+		//remap
+		for (int i = 0; i < 7; ++i)
+			pts[idx+i] = outs[i];
 
-	//rgba
-	rgba_out_buf[4*idx] = (unsigned char) (outs[3] * 255.0);
-	rgba_out_buf[4*idx+1] = (unsigned char) (outs[4] * 255.0);
-	rgba_out_buf[4*idx+2] = (unsigned char) (outs[5] * 255.0);
-	rgba_out_buf[4*idx+3] = (unsigned char) (outs[6] * 255.0);
+
+		
+		//write out
+		if (k >= initial_iterations) {
+			int j = k - initial_iterations;
+			//tranform
+			//left blank for now
+
+			//quantize
+			float viewbox_size = 4.0;
+			pt_out_buf[2*idx*iterations+j*2] = (int) (outs[0]/viewbox_size * (float) xdim /2.0 + ((float) xdim /2.0));
+			pt_out_buf[2*idx*iterations+j*2+1] = (int) (outs[1]/viewbox_size * (float) ydim /2.0 + ((float) ydim /2.0));
+			zbuf[idx*iterations+j] = outs[2];
+
+			//rgba
+			rgba_out_buf[4*idx*iterations+j*4] = (unsigned char) (127.0 + outs[3] * 127.0);
+			rgba_out_buf[4*idx*iterations+j*4+1] = (unsigned char) (127.0 + outs[4] * 127.0);
+			rgba_out_buf[4*idx*iterations+j*4+2] = (unsigned char) (127.0 + outs[5] * 127.0);
+			rgba_out_buf[4*idx*iterations+j*4+3] = (unsigned char) (127.0 + outs[6] * 127.0);
+		}
+	}
 }
 
 void * writer_thread(void * arg) {

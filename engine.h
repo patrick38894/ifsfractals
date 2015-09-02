@@ -28,7 +28,7 @@ typedef struct {
 } t_data;
 
 
-__global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, float * zbuf, unsigned char * out_buf);
+__global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, float * zbuf, unsigned char * out_buf, int iterations);
 void * writer_thread(void * arg);
 
 #endif

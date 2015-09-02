@@ -4,14 +4,15 @@ sem_t sem;
 
 int main(int argc, char ** argv) {
 	
-	int dimx = 500;
-	int dimy = 500;
+	int dimx = 1920;
+	int dimy = 1080;
 	
 	const int xyz = 3; //xyzrgba
 	const int rgba = 4;
-	const int total_threads = 1024;
-	const int total_blocks= 4; 
+	const int total_threads = 4096;
+	const int total_blocks= 32; 
 	const int buf_size = total_threads * (xyz+rgba);
+	const int gpu_iterations = 128;
 	float pt_buf[buf_size];
 
 	float * gpu_pt_buf;
@@ -26,15 +27,15 @@ int main(int argc, char ** argv) {
 	image.num_nodes = 0;
 	
 	gpuErrchk(cudaMalloc((void **) &gpu_pt_buf, buf_size * sizeof(float)));
-	gpuErrchk(cudaMalloc((void **) &gpu_char_buf, total_threads * rgba * sizeof(unsigned char)));
-	gpuErrchk(cudaMalloc((void **) &gpu_coord_buf, total_threads * 2 * sizeof(int)));
-	gpuErrchk(cudaMalloc((void **) &gpu_z_buf, total_threads * sizeof(float)));
+	gpuErrchk(cudaMalloc((void **) &gpu_char_buf, gpu_iterations * total_threads * rgba * sizeof(unsigned char)));
+	gpuErrchk(cudaMalloc((void **) &gpu_coord_buf, gpu_iterations * total_threads * 2 * sizeof(int)));
+	gpuErrchk(cudaMalloc((void **) &gpu_z_buf, gpu_iterations * total_threads * sizeof(float)));
 
 	pthread_t tid;
 	sem_init(&sem, 0, 1);
 	t_data thread_args;
 	thread_args.image = image;
-	thread_args.num_elements = total_threads;
+	thread_args.num_elements = total_threads * gpu_iterations;
 	thread_args.num_dims = xyz;
 	thread_args.gpu_char_buf = gpu_char_buf;
 	thread_args.gpu_z_buf = gpu_z_buf;
@@ -42,7 +43,7 @@ int main(int argc, char ** argv) {
 
 	srand(time(0));
 	
-	int iterations = 500;
+	int iterations = 512;
 	printf("generating fractal\n");
 	for (int i = 0; i < iterations; ++i) {
 		for (int j = 0; j < buf_size; ++j)
@@ -55,10 +56,10 @@ int main(int argc, char ** argv) {
 		dim3 num_blocks(total_blocks);
 
 		sem_wait(&sem);
-		ifs_kernel<<<num_blocks,threads_per_block>>>(gpu_pt_buf, dimx, dimy, gpu_coord_buf, gpu_z_buf, gpu_char_buf);
+		ifs_kernel<<<num_blocks,threads_per_block>>>(gpu_pt_buf, dimx, dimy, gpu_coord_buf, gpu_z_buf, gpu_char_buf, gpu_iterations);
 		///////////////////////
 		pthread_create(&tid, NULL, writer_thread, (void *) &thread_args);
-		if (i%10 == 0)
+		//if (i%10 == 0)
 			printf("%d%% complete\n", 100*i/iterations);
 	}
 	sem_wait(&sem);

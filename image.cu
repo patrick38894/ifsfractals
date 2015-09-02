@@ -13,8 +13,15 @@ int insert_node(image_t image, int x, int y, node_t * to_add) {
 		return 1;
 	}
 	node_t * current = *head_ref;
-	while (current->next && (to_add->z > current->next->z))
+	int alphasum = 0;
+	while (current->next && (to_add->z > current->next->z)) {
+		alphasum += current->a;
 		current = current->next;
+	}
+	if (alphasum > 250) {
+		free(to_add);
+		return 0;
+	}
 	to_add->next = current->next;
 	current->next = to_add; 
 	return 1;
@@ -64,8 +71,8 @@ int render_image(image_t image, unsigned char * output) {
 		output[i*3+0] = r;
 		output[i*3+1] = g;
 		output[i*3+2] = b;
-		if (i % 1000 == 0)
-			printf("%d%% complete\n", i*100/(image.xdim*image.ydim));
+		//if (i % 1000 == 0)
+		//	printf("%d%% complete\n", i*100/(image.xdim*image.ydim));
 	}
 	return 1;
 }
