@@ -6,6 +6,11 @@ int insert_node(image_t image, int x, int y, node_t * to_add) {
 //	printf("adding node at coordinates (%d,%d)\n)", x, y);
 	if ((x < 0 || x >= image.xdim) || (y < 0 || y >= image.ydim))
 		return 0;
+	if (to_add->a < 10) {
+		free(to_add);
+		return 0;
+	}
+	
 	node_t ** head_ref = &image.data[idx];
 	if (*head_ref == NULL || (*head_ref)->z > to_add->z) {
 		to_add->next = *head_ref;

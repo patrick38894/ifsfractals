@@ -9,10 +9,10 @@ int main(int argc, char ** argv) {
 	
 	const int xyz = 3; //xyzrgba
 	const int rgba = 4;
-	const int total_threads = 4096;
+	const int total_threads = 2048;
 	const int total_blocks= 32; 
 	const int buf_size = total_threads * (xyz+rgba);
-	const int gpu_iterations = 128;
+	const int gpu_iterations = 64;
 	float pt_buf[buf_size];
 
 	float * gpu_pt_buf;
@@ -43,7 +43,7 @@ int main(int argc, char ** argv) {
 
 	srand(time(0));
 	
-	int iterations = 512;
+	int iterations = 128;
 	printf("generating fractal\n");
 	for (int i = 0; i < iterations; ++i) {
 		for (int j = 0; j < buf_size; ++j)

@@ -73,6 +73,8 @@ __global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, fl
 }
 
 void * writer_thread(void * arg) {
+
+
 	t_data * input = (t_data *) arg;
 	unsigned char * temp_char_buf = (unsigned char *) malloc(4 * input->num_elements * sizeof(unsigned char));
 	float * temp_z_buf = (float *) malloc(input->num_elements * sizeof(float));
@@ -91,8 +93,31 @@ void * writer_thread(void * arg) {
 		node->a = temp_char_buf[i*4+3];
 		node->z = temp_z_buf[i];
 		node->next = NULL;
+
+		//help blurring
+		node->a /= 4;
 	
 		insert_node(input->image, x, y, node);
+
+		//pixel blurring
+		int diameter = 7;
+		int d2 = diameter /2;
+		for (int j = 0; j < diameter; ++j) {
+			for (int k = 0; k < diameter; ++k) {
+				if (k == d2 && j == d2)
+					continue;
+				node_t * temp = (node_t *) malloc(sizeof(node_t));
+				memcpy(temp, node, sizeof(node_t));
+				int tempx = x -d2 + j;
+				int tempy = y -d2 + k;
+				temp->a = node->a/static_cast<unsigned char>((int)(j-d2)*(j-d2)+(k-d2)*(k-d2))/2;
+				temp->r = node->r/static_cast<unsigned char>((int)(j-d2)*(j-d2)+(k-d2)*(k-d2))/2;
+				temp->g = node->g/static_cast<unsigned char>((int)(j-d2)*(j-d2)+(k-d2)*(k-d2))/2;
+				temp->b = node->b/static_cast<unsigned char>((int)(j-d2)*(j-d2)+(k-d2)*(k-d2))/2;
+				insert_node(input->image, tempx, tempy, temp);
+			}
+		}
+		///
 	}
 	free(temp_z_buf);
 	free(temp_char_buf);
