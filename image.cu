@@ -3,7 +3,8 @@
 //naive implementation of rgba image rendering with zbuffer
 int insert_node(image_t image, int x, int y, node_t * to_add) {
 	int idx = y * image.xdim + x;
-	if ((x < 0 || x > image.xdim) || (y < 0 || y > image.ydim))
+//	printf("adding node at coordinates (%d,%d)\n)", x, y);
+	if ((x < 0 || x >= image.xdim) || (y < 0 || y >= image.ydim))
 		return 0;
 	node_t ** head_ref = &image.data[idx];
 	if (*head_ref == NULL || (*head_ref)->z > to_add->z) {
@@ -41,18 +42,19 @@ void render_stack(node_t * head, unsigned char * r, unsigned char * g, unsigned 
 	//NOTE: in order to implement a quick fix for the stack overflow problem in the recursive version, i have reversed the order of the stack (placing the view on positive side of the z axis, looking back in the negative direction)
 
 	*r = *g = *b = 0;
-	*a = 1;
+	*a = 255;
 	node_t * current = head;
 	while (current) {
-		*r = over(*r, *a, current->r, current->a);
-		*g = over(*g, *a, current->g, current->a);
-		*b = over(*b, *a, current->b, current->a);
-		*a = over(*a, *a, current->a, current->a);
+		*r = over(current->r, current->a, *r, *a);
+		*g = over(current->g, current->a, *g, *a);
+		*b = over(current->b, current->a, *b, *a);
+		*a = over(current->a, current->a, *a, *a);
 		current = current->next;
 	}
 }
 
 int render_image(image_t image, unsigned char * output) {
+	printf("rasterizing:\n");
 	for (int i = 0; i < image.xdim*image.ydim; ++i) {
 		unsigned char r;
 		unsigned char g;
@@ -62,6 +64,8 @@ int render_image(image_t image, unsigned char * output) {
 		output[i*3+0] = r;
 		output[i*3+1] = g;
 		output[i*3+2] = b;
+		if (i % 1000 == 0)
+			printf("%d%% complete\n", i*100/(image.xdim*image.ydim));
 	}
 	return 1;
 }

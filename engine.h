@@ -14,6 +14,10 @@
 
 extern sem_t sem;
 
+void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true);
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+
+
 typedef struct {
         image_t image;
         int num_elements;

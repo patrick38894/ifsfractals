@@ -1,5 +1,14 @@
 #include "engine.h"
 
+void gpuAssert(cudaError_t code, const char *file, int line, bool abort)
+{
+   if (code != cudaSuccess) 
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      exit(code);
+   }
+}
+
 __global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, float * zbuf, unsigned char * rgba_out_buf) {
 	float outs[7];
 	int idx = threadIdx.x + blockIdx.x*blockDim.x;
@@ -36,15 +45,15 @@ __global__ void ifs_kernel(float * pts, int xdim, int ydim, int * pt_out_buf, fl
 		//left blank for now
 	}
 		//quantize
-	pt_out_buf[2*idx] = (int) (outs[0] * (float) xdim + ((float) xdim /2.0));
-	pt_out_buf[2*idx+1] = (int) (outs[1] * (float) ydim + ((float) ydim /2.0));
+	pt_out_buf[2*idx] = (int) (outs[0] * (float) xdim /2.0 + ((float) xdim /2.0));
+	pt_out_buf[2*idx+1] = (int) (outs[1] * (float) ydim /2.0 + ((float) ydim /2.0));
 	zbuf[idx] = outs[2];
 
 	//rgba
 	rgba_out_buf[4*idx] = (unsigned char) (outs[3] * 255.0);
 	rgba_out_buf[4*idx+1] = (unsigned char) (outs[4] * 255.0);
 	rgba_out_buf[4*idx+2] = (unsigned char) (outs[5] * 255.0);
-	rgba_out_buf[4*idx+3] = (unsigned char) 1; //(unsigned char) (outs[6] * 255.0);
+	rgba_out_buf[4*idx+3] = (unsigned char) (outs[6] * 255.0);
 }
 
 void * writer_thread(void * arg) {
@@ -52,18 +61,18 @@ void * writer_thread(void * arg) {
 	unsigned char * temp_char_buf = (unsigned char *) malloc(4 * input->num_elements * sizeof(unsigned char));
 	float * temp_z_buf = (float *) malloc(input->num_elements * sizeof(float));
 	int * temp_coord_buf = (int *) malloc(2 * input->num_elements * sizeof(int));
-	cudaMemcpy(temp_char_buf, input->gpu_char_buf, 4 * input->num_elements * sizeof(unsigned char), cudaMemcpyDeviceToHost);
-	cudaMemcpy(temp_z_buf, input->gpu_z_buf, input->num_dims * input->num_elements * sizeof(float), cudaMemcpyDeviceToHost);
-	cudaMemcpy(temp_coord_buf, input->gpu_coord_buf, 2 * input->num_elements * sizeof(float), cudaMemcpyDeviceToHost);
+	gpuErrchk(cudaMemcpy(temp_char_buf, input->gpu_char_buf, 4 * input->num_elements * sizeof(unsigned char), cudaMemcpyDeviceToHost));
+	gpuErrchk(cudaMemcpy(temp_z_buf, input->gpu_z_buf, input->num_elements * sizeof(float), cudaMemcpyDeviceToHost));
+	gpuErrchk(cudaMemcpy(temp_coord_buf, input->gpu_coord_buf, 2 * input->num_elements * sizeof(float), cudaMemcpyDeviceToHost));
 	for (int i = 0; i < input->num_elements; ++i) {
 		int x = temp_coord_buf[i*2];
 		int y = temp_coord_buf[i*2+1];
-		
+		//printf("inserting node at position (%d,%d)\n", x, y);
 		node_t * node = (node_t *) malloc(sizeof(node_t));
-		node->r = temp_char_buf[i*6+2];
-		node->g = temp_char_buf[i*6+3];
-		node->b = temp_char_buf[i*6+4];
-		node->a = temp_char_buf[i*6+5];
+		node->r = temp_char_buf[i*4];
+		node->g = temp_char_buf[i*4+1];
+		node->b = temp_char_buf[i*4+2];
+		node->a = temp_char_buf[i*4+3];
 		node->z = temp_z_buf[i];
 		node->next = NULL;
 	

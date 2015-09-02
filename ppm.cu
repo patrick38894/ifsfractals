@@ -10,9 +10,9 @@ int writePPM(unsigned char * buf, int dimx, int dimy, const char * name)
     for (i = 0; i < dimx; ++i)
     {
       static unsigned char color[3];
-      color[0] = buf[j*dimx*3 +i];  /* red */
-      color[1] = buf[j*dimx*3 +i+1];  /* green */
-      color[2] = buf[j*dimx*3 +i+2];  /* blue */
+      color[0] = buf[j*dimx*3 +i*3];  /* red */
+      color[1] = buf[j*dimx*3 +i*3+1];  /* green */
+      color[2] = buf[j*dimx*3 +i*3+2];  /* blue */
       (void) fwrite(color, 1, 3, fp);
     }
   }

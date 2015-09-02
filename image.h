@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 typedef struct node_t {
         unsigned char r;
         unsigned char g;
@@ -10,6 +12,7 @@ typedef struct node_t {
 typedef struct {
 	int xdim;
 	int ydim;
+	int num_nodes;
 	node_t ** data;
 } image_t;
 
